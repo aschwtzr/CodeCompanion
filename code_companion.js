@@ -69,6 +69,7 @@ if (!process.env.token) {
     process.exit(1);
 }
 
+var CronJob = require('cron').CronJob;
 var Botkit = require(__dirname + '/lib/Botkit.js');
 var os = require('os');
 var http = require('http');
