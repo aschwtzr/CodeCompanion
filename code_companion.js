@@ -69,12 +69,13 @@ if (!process.env.token) {
     process.exit(1);
 }
 
-var Botkit = require('../lib/Botkit.js');
+var Botkit = require(__dirname + '/lib/Botkit.js');
 var os = require('os');
+var http = require('http');
 var request = require('request');
 
 var controller = Botkit.slackbot({
-    debug: true,
+    debug: false,
 });
 
 var bot = controller.spawn({
@@ -188,16 +189,38 @@ controller.hears(['what is my name', 'who am i'], 'direct_message,direct_mention
 
 
 
-controller.hears(['how am I doing?', 'daily stats'], 'direct_message', function(bot,message) {
-  let wakaSumariesURL = 'https://wakatime.com/api/v1/users/current/summaries?'
-  let range = 'start=2017-06-30&end=2017-06-30'
-  let apiKey= ''
+controller.hears(['how am I doing?', 'stats', 'daily stats'], 'direct_message', function(bot,message) {
+  var today = new Date();
+  todayString = today.toISOString();
+  date = todayString.split("T")
 
-  request.get(wakaSumariesURL+range+apiKey).on('response', function(response) {
-    console.log(response.statusCode) // 200
-    console.log(response.headers['content-type']) // 'image/png'
+
+  let wakaURL = 'https://wakatime.com/api/v1/users/current/summaries?'
+  let range = 'start='+date[0]+'&end='+date[0]+'?&'
+  let apiKey= 'api_key='
+
+  request(wakaURL + range + apiKey, function (err, res, body) {
+    jsonBody = JSON.parse(body)
+
+    console.log(jsonBody.data[0].editors);
+    for (ide in jsonBody.data[0].editors) {
+      name = jsonBody.data[0].editors[ide].name
+      time = jsonBody.data[0].editors[ide].text
+      bot.reply(message, "you've spent " + time + " in " + name + " today.")
+    }
+
+    for (project in jsonBody.data[0].projects) {
+      name = jsonBody.data[0].projects[project].name
+      time = jsonBody.data[0].projects[project].text
+      bot.reply(message, "you've spent " + time + " on " + name + " today.")
+    }
+
+    for (language in jsonBody.data[0].languages) {
+      name = jsonBody.data[0].languages[language].name
+      time = jsonBody.data[0].languages[language].text
+      bot.reply(message, "you've spent " + time + " with " + name + " today.")
+    }
   });
-
 });
 
 
